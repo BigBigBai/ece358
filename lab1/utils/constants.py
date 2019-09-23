@@ -1,0 +1,9 @@
+# Constants for Lab 1
+
+L = 2000
+C = 1000000.0
+T = 1000
+
+EVENT_ARRIVAL = 'a'
+EVENT_DEPARTURE = 'd'
+EVENT_OBSERVER = 'o'
