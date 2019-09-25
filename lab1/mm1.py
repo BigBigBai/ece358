@@ -5,5 +5,5 @@
 from classes.event_queue import EventQueue
 
 
-mm1_des = EventQueue(0.25, 0.95)
+mm1_des = EventQueue(0.25, 0.95, 0.1)
 mm1_des.run_des()

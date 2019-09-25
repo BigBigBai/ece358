@@ -5,9 +5,13 @@ class QueueObject:
 
 
 class ArrivalEvent(QueueObject):
-    def __init__(self, event_time, service_time):
+    def __init__(self, event_time):
         super().__init__(event_time, 'a')
-        self.service_time = service_time
+
+
+class DepartureEvent(QueueObject):
+    def __init__(self, event_time):
+        super().__init__(event_time, 'd')
 
 
 class ObserverEvent(QueueObject):
