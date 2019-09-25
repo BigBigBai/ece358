@@ -46,6 +46,7 @@ class EventQueue:
     # Returns: none
     #
     def run_des(self):
+        results = []
         for rho in arange(self.min_rho, self.max_rho + 0.05, self.step_size):
             # Reset the DES for each iteration
             self.clean_des()
@@ -68,7 +69,12 @@ class EventQueue:
                 self.process_next_event()
 
             # Compute and print metrics
-            self.print_results(rho, lam)
+            metrics = self.compute_results(rho, self.max_queue_size)
+            self.print_results(metrics)
+
+            results.append(metrics)
+
+        return results
 
     ##
     # Resets the EventQueue properties to prepare for the next iteration
@@ -248,37 +254,36 @@ class EventQueue:
 
         self.counts[curr_event.event_type] += 1
 
+    ##
+    # Resets the idle timers
+    # Parameters: event -> the current event
+    # Returns: none
+    #
     def idle_reset(self, event):
         self.cumulative_idle_time += self.idle_time
         self.idle_time = 0
         self.idle_start = event.event_time
 
     ##
-    # Computes and prints the metrics for the current iteration
-    # Also prints the M/M/1/K-specific metrics if a max queue size was given
+    # Computes the metrics for the current iteration
+    # Checks whether M/M/1/K-specific metrics should be generated
     # Parameters: rho -> the traffic intensity
-    #             lam -> lambda, the rate parameter
+    #             K -> the max queue size
+    # Returns: metrics -> the corresponding metrics to be returned
+    #
+    def compute_results(self, rho, K=None):
+        E_N = str(self.queue_size_sum * 1.0 / self.counts[c.EVENT_OBSERVER])
+        if K:
+            P_LOSS = str(self.loss_count * 1.0 / self.counts[c.EVENT_ARRIVAL])
+            return [str(K), "%.2f" % rho, E_N, P_LOSS]
+        else:
+            P_IDLE = str(self.cumulative_idle_time * 1.0 / c.T)
+            return ["%.2f" % rho, E_N, P_IDLE]
+
+    ##
+    # Prints the metrics for the current iteration
+    # Parameters: metrics -> the metrics to be printed
     # Returns: none
     #
-    def print_results(self, rho, lam):
-        print("{},{},{},{},{}".format(
-            self.max_queue_size,
-            "%.2f" % rho,
-            self.queue_size_sum * 1.0 / self.counts[c.EVENT_OBSERVER],
-            self.cumulative_idle_time * 1.0 / c.T,
-            self.loss_count * 1.0 / self.counts[c.EVENT_ARRIVAL])
-        )
-        # print("\nrho: %.2f" % rho)
-        # if self.max_queue_size:
-        #     print("K:", self.max_queue_size)
-        # print("lambda: %.0f" % lam)
-        # print("N_a:", self.counts[c.EVENT_ARRIVAL])
-        # print("N_d:", self.counts[c.EVENT_DEPARTURE])
-        # print("N_o:", self.counts[c.EVENT_OBSERVER])
-        # print("idle time:", self.idle_time)
-        # if self.max_queue_size:
-        #     print("dropped count:", self.loss_count)
-        # print("E[N]:", self.queue_size_sum * 1.0 / self.counts[c.EVENT_OBSERVER])
-        # print("P_IDLE:", self.cumulative_idle_time * 1.0 / c.T)
-        # if self.max_queue_size:
-        #     print("P_LOSS:", self.loss_count * 1.0 / self.counts[c.EVENT_ARRIVAL])
+    def print_results(self, metrics):
+        print(', '.join(metrics))
