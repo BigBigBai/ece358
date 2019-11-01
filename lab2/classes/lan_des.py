@@ -39,6 +39,20 @@ class LAN_DES:
 
         return sender_index
 
+    def update_node_event_times(self, node, new_time):
+        for event in node.events:
+            if event.event_time > new_time:
+                break
+            event.event_time = new_time
+
+    def handle_collision(self, node):
+        node.collisions += 1
+
+        backoff_time = utils.get_exponential_backoff(node.collisions)
+
+        waiting_start = node.events[0].event_time
+        self.update_node_event_times(node, waiting_start + backoff_time + c.jamming_time)
+
     # helper function for printing first packet
     def first_packet(self, sender, overlaps):
         first_packet = []
@@ -53,12 +67,17 @@ class LAN_DES:
 
     def run_des(self):
         self.populate_lan()
+        num_packets = 0
+        for n in self.lan:
+            num_packets += len(n.events)
+        print(num_packets)
 
         total_overlaps = 0
         collision_occurred = False
         total_packets = 0
         successfully_transmitted = 0
         total_collisions = 0
+        dropped_packets = 0
         while self.timer < self.T:
             sender = self.next_sender()
             # print('Next sender: node', sender)
@@ -77,43 +96,25 @@ class LAN_DES:
                 if t_first_bit < self.lan[i].events[0].event_time < t_last_bit:
                     # print(t_first_bit, t_last_bit)
                     # print(i, self.lan[i].events[0].event_time)
-                    for event in self.lan[i].events:
-                        if event.event_time > t_last_bit:
-                            break
-                        event.event_time = t_last_bit
+                    self.update_node_event_times(self.lan[i], t_last_bit)
 
                 elif self.lan[i].events[0].event_time < t_first_bit:
                     collision_occurred = True
-                    self.lan[i].collisions += 1
-                    curr_collisions += 1
-                    # print('Node', sender, 'collided with node', i)
+                    self.handle_collision(self.lan[i])
 
-                    i_backoff = utils.get_exponential_backoff(self.lan[i].collisions)
-
-                    i_waiting_start = self.lan[i].events[0].event_time
-                    for event in self.lan[i].events:
-                        if event.event_time > i_waiting_start + i_backoff:
-                            break
-                        event.event_time = i_waiting_start + i_backoff
+                    total_packets += 1
 
             if collision_occurred:
                 # print(curr_collisions)
                 collision_occurred = False
-                self.lan[sender].collisions += 1
-                total_collisions += 1
-                # print(self.lan[sender].collisions)
-                curr_backoff = utils.get_exponential_backoff(self.lan[sender].collisions)
-
-                curr_waiting_start = self.lan[sender].events[0].event_time
-                for event in self.lan[sender].events:
-                    if event.event_time > curr_waiting_start + curr_backoff:
-                        break
-                    event.event_time = curr_waiting_start + curr_backoff
+                curr_collisions += 1
+                self.handle_collision(self.lan[sender])
                     
                 if self.lan[sender].collisions > c.K_max:
                     # print('Packet dropped!')
                     self.lan[sender].collisions = 0
                     self.lan[sender].events.popleft()
+                    dropped_packets += 1
                     
             else:
                 self.lan[sender].collisions = 0
@@ -121,13 +122,15 @@ class LAN_DES:
                 successfully_transmitted += 1
 
             total_packets += 1
+            total_collisions += curr_collisions
             # print(self.timer)
 
         print('N =', self.N)
         print('Successfully transmitted:', successfully_transmitted)
         print('Total packets:', total_packets)
         print('Efficiency:', successfully_transmitted * 1.0 / total_packets)
-        print('Total collisions', total_collisions)
+        print('Total collisions:', total_collisions)
+        print('Dropped packets:', dropped_packets)
 
                 
 
