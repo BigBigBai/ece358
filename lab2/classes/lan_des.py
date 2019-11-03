@@ -46,11 +46,12 @@ class LAN_DES:
             node.busy_count += 1
             backoff_time = utils.get_exponential_backoff(node.busy_count)
 
-            if node.collisions > c.K_max:
+            if node.busy_count > c.K_max:
                 # print('Packet dropped!')
                 node.busy_count = 0
                 node.events.popleft()
                 self.dropped_packets += 1
+                return
         else:
             backoff_time = 0
 
@@ -98,7 +99,6 @@ class LAN_DES:
         total_packets = 0
         successfully_transmitted = 0
         total_collisions = 0
-        dropped_packets = 0
         while self.timer < self.T:
             sender = self.next_sender()
             # print('Next sender: node', sender)
@@ -142,6 +142,7 @@ class LAN_DES:
 
             total_packets += 1
             total_collisions += curr_collisions
+            # print(list(map(lambda x: len(x.events), self.lan)))
             # print(self.timer)
 
         print('N =', self.N)
