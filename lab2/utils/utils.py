@@ -2,7 +2,7 @@
 
 import csv
 import math
-from random import random, randint
+from random import random, randrange
 
 from . import constants as c
 
@@ -14,4 +14,4 @@ def get_random_variable(mean):
 
 # Calculates exponential backoff given number of collisions
 def get_exponential_backoff(collisions):
-    return randint(0, 2**collisions) * 512 / c.R
+    return randrange(0, 2**collisions) * 512 / c.R
