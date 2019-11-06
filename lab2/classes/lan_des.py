@@ -60,9 +60,6 @@ class LAN_DES:
         node.collisions += 1
         node.busy_count = 0
 
-        if node.collisions > 3:
-            print(node.collisions)
-
         backoff_time = utils.get_exponential_backoff(node.collisions)
 
         self.update_node_event_times(node, waiting_start + backoff_time, collision_logic=True)
@@ -89,7 +86,6 @@ class LAN_DES:
 
             curr_collisions = 0
 
-            collided = []
             for i in range(self.N):
                 if i == sender or len(self.lan[i].events) == 0:
                     continue
@@ -97,15 +93,12 @@ class LAN_DES:
                 t_last_bit = t_first_bit + c.t_trans
 
                 # Cannot detect line is busy, collision occurs
-                if self.lan[i].events[0].event_time < t_first_bit:
+                if self.lan[i].events[0].event_time < t_first_bit or self.lan[i].events[0].event_time - t_first_bit < 96 / c.R:
                     collision_occurred = True
                     curr_collisions += 1
                     self.handle_collision(self.lan[i], t_last_bit)
 
                     total_packets += 1
-                    collided.append(i)
-            if len(collided) > 5:
-                print(sender, collided)
 
             if collision_occurred:
                 collision_occurred = False
